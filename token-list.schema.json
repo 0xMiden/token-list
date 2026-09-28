@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/0xMiden/token-list/main/token-list.schema.json",
+  "title": "Miden verified token list",
+  "description": "The tokenlists.org shape with chainId replaced by network and address by faucetId.",
+  "type": "object",
+  "required": ["name", "timestamp", "version", "tokens"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "version": {
+      "type": "object",
+      "required": ["major", "minor", "patch"],
+      "additionalProperties": false,
+      "properties": {
+        "major": { "type": "integer", "minimum": 0 },
+        "minor": { "type": "integer", "minimum": 0 },
+        "patch": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "keywords": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 20 }, "maxItems": 20 },
+    "logoURI": { "type": "string", "format": "uri" },
+    "tokens": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "required": ["network", "faucetId", "symbol", "name", "decimals"],
+        "additionalProperties": false,
+        "properties": {
+          "network": { "type": "string", "enum": ["mainnet", "testnet", "devnet"] },
+          "faucetId": { "type": "string", "pattern": "^m[a-z]{1,4}1[02-9ac-hj-np-z]+$" },
+          "symbol": { "type": "string", "minLength": 1, "maxLength": 20 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "decimals": { "type": "integer", "minimum": 0, "maximum": 18 },
+          "logoURI": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+name: Validate lists
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Schema
+        run: |
+          for list in mainnet.json testnet.json devnet.json; do
+            [ -f "$list" ] || continue
+            npx --yes -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft7 -c ajv-formats -s token-list.schema.json -d "$list"
+          done
+      - name: Network and duplicate checks
+        run: node scripts/check-lists.mjs
