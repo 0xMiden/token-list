@@ -184,3 +184,12 @@ test('a logo under a regular file fails cleanly and later tokens are still check
   rejects(result, /missing/);
   assert.match(result.stderr, /larger than 256x256/);
 });
+
+test('a logo directory that links to itself reports a read error and later tokens are still checked', () => {
+  const second = token({ faucetId: OTHER, logoURI: PREFIX + logoPath('png', OTHER) });
+  const files = { [logoPath('png', OTHER)]: png(300, 64) };
+  const links = { [`logos/${ID}`]: `logos/${ID}` };
+  const result = run({ tokens: [withLogo(), second], files, links });
+  rejects(result, /cannot be read \(ELOOP\)/);
+  assert.match(result.stderr, /larger than 256x256/);
+});
