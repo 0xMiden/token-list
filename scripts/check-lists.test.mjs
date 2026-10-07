@@ -420,3 +420,18 @@ test('a logo of exactly 32 KiB passes and one byte over fails', () => {
   assert.equal(svgCase(padded(32768)).status, 0);
   rejects(svgCase(padded(32769)), /too large/);
 });
+
+const IN_COMMENT = /< inside a comment before the root/;
+
+test('a comment before the root hiding a nested clipPath fails', () => {
+  const hidden = `<svg ${NS}><clipPath id="c"><clipPath id="e"><rect fill="url(#g)"/></clipPath></clipPath></svg>`;
+  rejectsSvg(`<!-->${hidden}--><svg ${NS}></svg>`, IN_COMMENT);
+});
+
+test('a comment before the root hiding a tag fails', () => {
+  rejectsSvg(`<!---><g>--><svg ${NS}></svg>`, IN_COMMENT);
+});
+
+test('a comment before the root with a bang-ended close fails', () => {
+  rejectsSvg(`<!-- --!></div> --><svg ${NS}></svg>`, IN_COMMENT);
+});

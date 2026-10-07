@@ -6,10 +6,10 @@
 // text only, no event handler, style attribute, character or entity reference or backslash, every
 // href a quoted # fragment, no CSS url() leaving the file, no @import, image-set() or src(), at
 // most 32 fragment references, and before the root only an XML declaration, comments and a DOCTYPE
-// without an internal subset. Tags nest (every end tag closes its own element, every element is
-// closed, nothing follows the root), with no comment, CDATA section or processing instruction
-// after the root starts, no < or > inside a quoted attribute value and every attribute value
-// quoted, so no clipPath holds a clipPath or a reference.
+// without an internal subset (a comment there holds no <). Tags nest (every end tag closes its
+// own element, every element is closed, nothing follows the root), with no comment, CDATA section
+// or processing instruction after the root starts, no < or > inside a quoted attribute value and
+// every attribute value quoted, so no clipPath holds a clipPath or a reference.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
@@ -106,6 +106,9 @@ function checkLogo(file, token) {
   if (!root) problem('is not an SVG');
   else if (/<[!?]/.test(svg.slice(root[0].length))) {
     problem('has a comment, CDATA section or processing instruction after the root starts');
+  }
+  if (root && [...root[0].matchAll(/<!--((?:(?!-->)[\s\S])*)-->/g)].some(([, body]) => body.includes('<'))) {
+    problem('has a < inside a comment before the root');
   }
   if (/<!DOCTYPE[^>]*\[|<!(?:ENTITY|ATTLIST|ELEMENT)/i.test(svg)) problem('has a DOCTYPE subset or declaration');
   if (/<\?(?!xml\s)/i.test(svg)) problem('has a processing instruction');
