@@ -38,7 +38,7 @@ function run({ tokens, files = {}, dirs = [], links = {}, timeout = 10_000 }) {
     symlinkSync(join(dir, target), join(dir, path));
   }
   try {
-    const result = spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout });
+    const result = spawnSync(process.execPath, [SCRIPT], { cwd: dir, encoding: 'utf8', timeout });
     if (result.error?.code === 'ETIMEDOUT') throw new Error('check timed out');
     if (result.error) throw result.error;
     return result;
@@ -175,4 +175,12 @@ test('a png whose IHDR length is not 13 fails', () => {
 test('a valid square png passes', () => {
   assert.equal(pngCase(png(64, 64)).status, 0);
   assert.equal(pngCase(png(256, 256)).status, 0);
+});
+
+test('a logo under a regular file fails cleanly and later tokens are still checked', () => {
+  const second = token({ faucetId: OTHER, logoURI: PREFIX + logoPath('png', OTHER) });
+  const files = { [`logos/${ID}`]: 'not a directory', [logoPath('png', OTHER)]: png(300, 64) };
+  const result = run({ tokens: [withLogo(), second], files });
+  rejects(result, /missing/);
+  assert.match(result.stderr, /larger than 256x256/);
 });

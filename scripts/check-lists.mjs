@@ -25,14 +25,20 @@ function checkLogo(file, token) {
   const match = path && /^logos\/([^/]+)\/logo\.png$/.exec(path);
   if (!match) return fail(`${file}: ${faucetId} logoURI is not a logo in this repository`);
   if (match[1] !== faucetId) return fail(`${file}: ${faucetId} logoURI names another faucet (${match[1]})`);
-  const stat = lstatSync(path, { throwIfNoEntry: false });
-  if (!stat) return fail(`${file}: ${faucetId} logo ${path} is missing`);
-  // GitHub serves the git tree and follows no link, so neither the file nor a directory may be one.
-  if (!stat.isFile() || realpathSync(path) !== resolve(path)) {
-    return fail(`${file}: ${faucetId} logo ${path} is not a regular file`);
+  let stat, bytes;
+  try {
+    stat = lstatSync(path, { throwIfNoEntry: false });
+    if (!stat) return fail(`${file}: ${faucetId} logo ${path} is missing`);
+    // GitHub serves the git tree and follows no link, so neither the file nor a directory may be one.
+    if (!stat.isFile() || realpathSync(path) !== resolve(path)) {
+      return fail(`${file}: ${faucetId} logo ${path} is not a regular file`);
+    }
+    if (stat.size > MAX_LOGO_BYTES) return fail(`${file}: ${faucetId} logo ${path} is too large`);
+    bytes = readFileSync(path);
+  } catch (error) {
+    const missing = error.code === 'ENOENT' || error.code === 'ENOTDIR';
+    return fail(`${file}: ${faucetId} logo ${path} ${missing ? 'is missing' : `cannot be read (${error.code})`}`);
   }
-  if (stat.size > MAX_LOGO_BYTES) return fail(`${file}: ${faucetId} logo ${path} is too large`);
-  const bytes = readFileSync(path);
   const signed = bytes.length >= 24 && bytes.subarray(0, 8).equals(PNG_SIGNATURE);
   if (!signed || bytes.readUInt32BE(8) !== 13 || bytes.toString('latin1', 12, 16) !== 'IHDR') {
     return fail(`${file}: ${path} is not a PNG`);
