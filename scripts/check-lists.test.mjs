@@ -31,7 +31,7 @@ function run({ tokens, files = {} }) {
     writeFileSync(join(dir, path), content);
   }
   try {
-    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8' });
+    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000 });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -245,4 +245,8 @@ test('an editor-style svg passes', () => {
       '<title>Mark</title><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient>' +
       '<path id="a" d="M0 0L8 8"/></defs><use href="#a" fill="url(#g)"/></svg>'
   );
+});
+
+test('many comments before a non-svg fail fast', () => {
+  rejectsSvg('<!---->'.repeat(40) + 'x', /is not an SVG/);
 });

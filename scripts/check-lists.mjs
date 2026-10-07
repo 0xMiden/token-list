@@ -11,7 +11,7 @@ const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/'
 const MAX_LOGO_BYTES = 32 * 1024;
 const MAX_PNG_SIDE = 256;
 // The XML declaration, comments and a DOCTYPE with no internal subset may precede the root.
-const SVG_ROOT = /^\s*(?:<\?xml\s[^>]*\?>\s*|<!--[\s\S]*?-->\s*|<!DOCTYPE[^>[]*>\s*)*<svg[\s>]/i;
+const SVG_ROOT = /^\s*(?:<\?xml\s[^>]*\?>\s*|<!--(?:(?!-->)[\s\S])*-->\s*|<!DOCTYPE[^>[]*>\s*)*<svg[\s>]/i;
 const ALLOWED_ELEMENTS = new Set([
   'svg', 'g', 'defs', 'symbol', 'use', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
   'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'title', 'desc', 'text', 'tspan',
