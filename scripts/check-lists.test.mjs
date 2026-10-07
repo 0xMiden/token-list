@@ -407,3 +407,16 @@ test('a start tag broken by a < fails', () => {
 test('a prefixed element closed by the same prefixed name passes', () => {
   passesSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:g><s:rect/></s:g></svg>\n`);
 });
+
+test('a png of exactly 256x256 passes and one side over fails', () => {
+  const pngCase = bytes => run({ tokens: [withLogo('png')], files: { [logoPath('png')]: bytes } });
+  assert.equal(pngCase(png(256, 256)).status, 0);
+  rejects(pngCase(png(257, 256)), /larger than 256x256/);
+  rejects(pngCase(png(256, 257)), /larger than 256x256/);
+});
+
+test('a logo of exactly 32 KiB passes and one byte over fails', () => {
+  const padded = size => GOOD_SVG + ' '.repeat(size - GOOD_SVG.length);
+  assert.equal(svgCase(padded(32768)).status, 0);
+  rejects(svgCase(padded(32769)), /too large/);
+});
