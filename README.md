@@ -19,7 +19,7 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
   "version": { "major": 1, "minor": 0, "patch": 1 },
   "keywords": ["miden", "testnet"],
   "tokens": [
-    { "network": "testnet", "faucetId": "mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec", "symbol": "MIDEN", "name": "Miden", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec/logo.svg" }
+    { "network": "testnet", "faucetId": "mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec", "symbol": "MIDEN", "name": "Miden", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec/logo.png" }
   ]
 }
 ```
@@ -30,7 +30,7 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 
 ## Logos
 
-A token may carry a `logoURI`, which must be `https://raw.githubusercontent.com/0xMiden/token-list/main/logos/<faucetId>/logo.svg` (or `.png`) for its own faucet ID, with the file in this repository. CI checks the path, that the file exists, that it is at most 32 KiB, that a PNG is at most 256x256, and that an SVG logo is a flat mark in ASCII text, every tag an ASCII name the check can read: only these elements (with or without a namespace prefix): `svg`, `g`, `defs`, `path`, `circle`, `ellipse`, `rect`, `line`, `polyline`, `polygon`, `linearGradient`, `radialGradient`, `stop`, `clipPath`, `title`, `desc`, `text` and `tspan` (so no use, symbol, mask, script, foreignObject, style, image, animation or filter element); no event handler, `style` attribute, character or entity reference or backslash; every `href` (and `xlink:href`) a quoted `#` fragment, no CSS `url()` that leaves the file (only a `#` fragment), no `@import`, `image-set()` or `src()`; no `href` or `url()` inside a `clipPath`, no `clipPath` inside a `clipPath`; tags nest (every end tag closes its own element, every element is closed, nothing follows the root); no comment, CDATA section or processing instruction after the root starts, no `<` or `>` inside an attribute value, and every attribute value quoted (so the `clipPath` check reads the real body); at most 32 internal references (`href="#..."` and `url(#...)`); and before the root only the XML declaration, comments and a DOCTYPE without an internal subset (a comment there holds no `<`) (so no entity or other declaration and no processing instruction). A logo is a complete square mark with its own background, since wallets draw it as is inside a circle.
+A token may carry a `logoURI`, which must be `https://raw.githubusercontent.com/0xMiden/token-list/main/logos/<faucetId>/logo.png` for its own faucet ID, with the file in this repository. CI checks the path, that the file exists, that it is a PNG of at most 32 KiB, and that it is at most 256x256. A logo is a complete square mark with its own background, since wallets draw it as is inside a circle.
 
 ## Adding a token
 

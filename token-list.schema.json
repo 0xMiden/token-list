@@ -37,7 +37,7 @@
           "logoURI": {
             "type": "string",
             "format": "uri",
-            "pattern": "^https://raw\\.githubusercontent\\.com/0xMiden/token-list/main/logos/m[a-z]{1,4}1[02-9ac-hj-np-z]+/logo\\.(svg|png)$"
+            "pattern": "^https://raw\\.githubusercontent\\.com/0xMiden/token-list/main/logos/m[a-z]{1,4}1[02-9ac-hj-np-z]+/logo\\.png$"
           }
         }
       }
