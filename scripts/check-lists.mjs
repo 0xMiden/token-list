@@ -1,7 +1,9 @@
 // Checks the rules the JSON Schema cannot express: each token's network matches its file name,
 // no faucet id appears twice in one list, and a token's logo is its own PNG in this repository
-// (at most 32 KiB and 256x256).
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+// (a regular file, reached through no link, holding a square PNG of at most 32 KiB and
+// 256x256).
+import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
 const MAX_LOGO_BYTES = 32 * 1024;
@@ -23,15 +25,24 @@ function checkLogo(file, token) {
   const match = path && /^logos\/([^/]+)\/logo\.png$/.exec(path);
   if (!match) return fail(`${file}: ${faucetId} logoURI is not a logo in this repository`);
   if (match[1] !== faucetId) return fail(`${file}: ${faucetId} logoURI names another faucet (${match[1]})`);
-  if (!existsSync(path)) return fail(`${file}: ${faucetId} logo ${path} is missing`);
-  if (statSync(path).size > MAX_LOGO_BYTES) return fail(`${file}: ${faucetId} logo ${path} is too large`);
+  const stat = lstatSync(path, { throwIfNoEntry: false });
+  if (!stat) return fail(`${file}: ${faucetId} logo ${path} is missing`);
+  // GitHub serves the git tree and follows no link, so neither the file nor a directory may be one.
+  if (!stat.isFile() || realpathSync(path) !== resolve(path)) {
+    return fail(`${file}: ${faucetId} logo ${path} is not a regular file`);
+  }
+  if (stat.size > MAX_LOGO_BYTES) return fail(`${file}: ${faucetId} logo ${path} is too large`);
   const bytes = readFileSync(path);
-  if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.toString('latin1', 12, 16) !== 'IHDR') {
+  const signed = bytes.length >= 24 && bytes.subarray(0, 8).equals(PNG_SIGNATURE);
+  if (!signed || bytes.readUInt32BE(8) !== 13 || bytes.toString('latin1', 12, 16) !== 'IHDR') {
     return fail(`${file}: ${path} is not a PNG`);
   }
-  if (bytes.readUInt32BE(16) > MAX_PNG_SIDE || bytes.readUInt32BE(20) > MAX_PNG_SIDE) {
-    fail(`${file}: ${path} is larger than ${MAX_PNG_SIDE}x${MAX_PNG_SIDE}`);
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (width > MAX_PNG_SIDE || height > MAX_PNG_SIDE) {
+    return fail(`${file}: ${path} is larger than ${MAX_PNG_SIDE}x${MAX_PNG_SIDE}`);
   }
+  if (width === 0 || width !== height) fail(`${file}: ${path} is not a square image`);
 }
 
 for (const file of readdirSync('.').filter(name => NETWORKS.has(name.replace(/\.json$/, '')))) {

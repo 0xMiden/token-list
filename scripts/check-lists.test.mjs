@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,13 +23,19 @@ const png = (width, height) => {
 };
 const pngOfSize = size => Buffer.concat([png(64, 64), Buffer.alloc(size - 33)]);
 
-// Builds a temporary repo with a testnet.json and the given files, runs the checks in it.
-function run({ tokens, files = {}, timeout = 10_000 }) {
+// Builds a temporary repo with a testnet.json, the given files, directories and symlinks (path to
+// target, both relative to the repo), runs the checks in it.
+function run({ tokens, files = {}, dirs = [], links = {}, timeout = 10_000 }) {
   const dir = mkdtempSync(join(tmpdir(), 'check-lists-'));
   writeFileSync(join(dir, 'testnet.json'), JSON.stringify({ tokens }));
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), content);
+  }
+  for (const path of dirs) mkdirSync(join(dir, path), { recursive: true });
+  for (const [path, target] of Object.entries(links)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    symlinkSync(join(dir, target), join(dir, path));
   }
   try {
     const result = spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout });
@@ -134,4 +140,39 @@ test('a duplicate faucet id fails', () => {
 
 test('a spawn timeout is reported as a timeout', () => {
   assert.throws(() => pngCase(png(64, 64), 1), /check timed out/);
+});
+
+test('a logo that is a symlink fails', () => {
+  const files = { 'elsewhere.png': png(64, 64) };
+  const links = { [logoPath()]: 'elsewhere.png' };
+  rejects(run({ tokens: [withLogo()], files, links }), /not a regular file/);
+});
+
+test('a logo that is a directory fails', () => {
+  rejects(run({ tokens: [withLogo()], dirs: [logoPath()] }), /not a regular file/);
+});
+
+test('a faucet directory that is a symlink fails', () => {
+  const files = { [logoPath('png', OTHER)]: png(64, 64) };
+  const links = { [`logos/${ID}`]: `logos/${OTHER}` };
+  rejects(run({ tokens: [withLogo()], files, links }), /not a regular file/);
+});
+
+test('a png with a zero side fails', () => {
+  rejects(pngCase(png(0, 0)), /not a square image/);
+});
+
+test('a png that is not square fails', () => {
+  rejects(pngCase(png(256, 128)), /not a square image/);
+});
+
+test('a png whose IHDR length is not 13 fails', () => {
+  const bytes = png(64, 64);
+  bytes.writeUInt32BE(12, 8);
+  rejects(pngCase(bytes), /is not a PNG/);
+});
+
+test('a valid square png passes', () => {
+  assert.equal(pngCase(png(64, 64)).status, 0);
+  assert.equal(pngCase(png(256, 256)).status, 0);
 });

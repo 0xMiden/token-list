@@ -30,7 +30,7 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 
 ## Logos
 
-A token may carry a `logoURI`, which must be `https://raw.githubusercontent.com/0xMiden/token-list/main/logos/<faucetId>/logo.png` for its own faucet ID, with the file in this repository. CI checks the path, that the file exists, that it is a PNG of at most 32 KiB, and that it is at most 256x256. A logo is a complete square mark with its own background, since wallets draw it as is inside a circle.
+A token may carry a `logoURI`, which must be `https://raw.githubusercontent.com/0xMiden/token-list/main/logos/<faucetId>/logo.png` for its own faucet ID, with the file in this repository. CI checks the path, that the file exists as a regular file (no symlink, in the file or any directory above it), that it is a PNG of at most 32 KiB, and that it is square and at most 256x256. A logo is a complete square mark with its own background, since wallets draw it as is inside a circle.
 
 ## Adding a token
 
