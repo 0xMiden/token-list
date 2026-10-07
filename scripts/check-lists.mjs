@@ -1,16 +1,21 @@
 // Checks the rules the JSON Schema cannot express: each token's network matches its file name,
 // no faucet id appears twice in one list, and a token's logo is its own file in this repository
-// (at most 32 KiB; a PNG at most 256x256; an SVG with no script, style, animation or foreign
-// element, no event handler and no link or CSS url() outside the file).
+// (at most 32 KiB; a PNG at most 256x256). An SVG logo is a flat mark: only allowlisted elements
+// (no script, foreignObject, style, image, animation or filter, prefixed or not), no event
+// handler, style attribute, character or entity reference or backslash, no href, CSS url(),
+// @import, image-set() or src() leaving the file, and before the root only an XML declaration,
+// comments and a DOCTYPE without an internal subset.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
 const MAX_LOGO_BYTES = 32 * 1024;
 const MAX_PNG_SIDE = 256;
-// An optional XML declaration, comments and a DOCTYPE may precede the root, as editors export them.
-const SVG_ROOT = /^\s*(?:<\?xml[^>]*\?>\s*|<!--[\s\S]*?-->\s*|<!DOCTYPE[^>[]*(?:\[[\s\S]*?\])?\s*>\s*)*<svg[\s>]/i;
-// Matched with or without a namespace prefix, since `<s:script>` runs when `s` is bound to SVG.
-const FORBIDDEN_ELEMENT = /<(?:[\w.-]+:)?(?:script|foreignObject|style|animate\w*|set)\b/i;
+// The XML declaration, comments and a DOCTYPE with no internal subset may precede the root.
+const SVG_ROOT = /^\s*(?:<\?xml\s[^>]*\?>\s*|<!--[\s\S]*?-->\s*|<!DOCTYPE[^>[]*>\s*)*<svg[\s>]/i;
+const ALLOWED_ELEMENTS = new Set([
+  'svg', 'g', 'defs', 'symbol', 'use', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
+  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'title', 'desc', 'text', 'tspan',
+]);
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 const NETWORKS = new Set(['mainnet', 'testnet', 'devnet']);
@@ -41,14 +46,21 @@ function checkLogo(file, token) {
     return;
   }
   const svg = bytes.toString('utf8');
-  if (!SVG_ROOT.test(svg)) fail(`${file}: ${path} is not an SVG`);
-  if (FORBIDDEN_ELEMENT.test(svg) || /<!ENTITY/i.test(svg)) {
-    fail(`${file}: ${path} embeds a script or foreign content (script, foreignObject, style, animation or entity)`);
+  const problem = message => fail(`${file}: ${path} ${message}`);
+  if (!SVG_ROOT.test(svg)) problem('is not an SVG');
+  if (/<!DOCTYPE[^>]*\[|<!(?:ENTITY|ATTLIST|ELEMENT)/i.test(svg)) problem('has a DOCTYPE subset or declaration');
+  if (/<\?(?!xml\s)/i.test(svg)) problem('has a processing instruction');
+  for (const [, , name] of svg.matchAll(/<([A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)/g)) {
+    if (!ALLOWED_ELEMENTS.has(name)) problem(`has an element outside the allowed set (<${name}>)`);
   }
-  if (/\son[a-z]+\s*=/i.test(svg)) fail(`${file}: ${path} has an event handler attribute`);
-  if (/href\s*=\s*["'](?!#)/i.test(svg) || /url\(\s*(?!["']?\s*#)/i.test(svg) || /@import/i.test(svg)) {
-    fail(`${file}: ${path} links outside itself`);
-  }
+  if (/&#|&[\w.-]+;/.test(svg)) problem('has a character or entity reference');
+  if (/\\/.test(svg)) problem('has a backslash');
+  if (/[\s"'/]style\s*=/i.test(svg)) problem('has a style attribute');
+  if (/[\s"'/]on[a-z]+\s*=/i.test(svg)) problem('has an event handler attribute');
+  if (/href\s*=\s*["'](?!#)/i.test(svg)) problem('has an href that leaves the file');
+  if (/url\(\s*(?!["']?\s*#)/i.test(svg)) problem('has a CSS url() that leaves the file');
+  if (/@import/i.test(svg)) problem('has a CSS @import');
+  if (/image-set\(|(?<![\w-])src\(/i.test(svg)) problem('has a CSS image-set() or src() function');
 }
 
 for (const file of readdirSync('.').filter(name => NETWORKS.has(name.replace(/\.json$/, '')))) {

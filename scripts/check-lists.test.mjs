@@ -90,7 +90,7 @@ test('an svg with an event handler fails', () => {
 });
 
 test('an svg linking outside itself fails', () => {
-  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.com/a.png"/></svg>'), /links outside/);
+  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/a.svg#x"/></svg>'), /href that leaves/);
 });
 
 test('a png over 256x256 fails', () => {
@@ -119,27 +119,27 @@ const passesSvg = content => {
 };
 
 test('a prefixed script element fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>`, /outside the allowed set/);
 });
 
 test('a foreignObject fails', () => {
-  rejectsSvg(`<svg ${NS}><foreignObject><div/></foreignObject></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS}><foreignObject><div/></foreignObject></svg>`, /outside the allowed set/);
 });
 
 test('a prefixed foreignObject fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:foreignObject/></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:foreignObject/></svg>`, /outside the allowed set/);
 });
 
 test('a style element fails', () => {
-  rejectsSvg(`<svg ${NS}><style>@import url(https://example.com/a.css);</style></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS}><style>@import url(https://example.com/a.css);</style></svg>`, /outside the allowed set/);
 });
 
 test('a css @import fails', () => {
-  rejectsSvg(`<svg ${NS} style="@import 'https://example.com/a.css'"></svg>`, /outside/);
+  rejectsSvg(`<svg ${NS}><!-- @import 'https://example.com/a.css' --></svg>`, /@import/);
 });
 
 test('a style attribute fetching a url fails', () => {
-  rejectsSvg(`<svg ${NS}><rect style="fill:url(https://example.com/a.svg#x)"/></svg>`, /outside/);
+  rejectsSvg(`<svg ${NS}><rect style="fill:url(https://example.com/a.svg#x)"/></svg>`, /CSS url/);
 });
 
 test('an internal url(#id) paint passes', () => {
@@ -147,15 +147,15 @@ test('an internal url(#id) paint passes', () => {
 });
 
 test('an animate element setting an href fails', () => {
-  rejectsSvg(`<svg ${NS}><a><animate attributeName="href" to="https://example.com"/></a></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS}><a><animate attributeName="href" to="https://example.com"/></a></svg>`, /outside the allowed set/);
 });
 
 test('a set element fails', () => {
-  rejectsSvg(`<svg ${NS}><a><set attributeName="href" to="https://example.com"/></a></svg>`, /script or foreign/);
+  rejectsSvg(`<svg ${NS}><a><set attributeName="href" to="https://example.com"/></a></svg>`, /outside the allowed set/);
 });
 
 test('an xlink:href to an outside url fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="https://example.com/a.svg#x"/></svg>`, /outside/);
+  rejectsSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="https://example.com/a.svg#x"/></svg>`, /href that leaves/);
 });
 
 test('an internal href passes', () => {
@@ -191,4 +191,52 @@ test('a null logoURI fails cleanly', () => {
 
 test('a numeric logoURI fails cleanly', () => {
   rejects(run({ tokens: [token({ logoURI: 5 })] }), /logoURI is not a string/);
+});
+
+test('a DOCTYPE internal subset fails', () => {
+  rejectsSvg(`<!DOCTYPE svg [<!ATTLIST svg onload CDATA "alert(1)">]>\n<svg ${NS}></svg>`, /DOCTYPE subset/);
+});
+
+test('a character reference fails', () => {
+  rejectsSvg(`<svg ${NS}><rect fill="&#117;rl(https://example.com/a.svg#x)"/></svg>`, /entity reference/);
+});
+
+test('a handler after a slash fails', () => {
+  rejectsSvg(`<svg ${NS}><g/onload="alert(1)"></g></svg>`, /event handler/);
+});
+
+test('a handler after a quote fails', () => {
+  rejectsSvg(`<svg ${NS}><g x="1"onload="alert(1)"></g></svg>`, /event handler/);
+});
+
+test('a processing instruction before the root fails', () => {
+  rejectsSvg(`<?xml-stylesheet type="text/css" href="#s"?>\n<svg ${NS}></svg>`, /processing instruction/);
+});
+
+test('an image element fails', () => {
+  rejectsSvg(`<svg ${NS}><image href="#a"/></svg>`, /outside the allowed set/);
+});
+
+test('a feImage element fails', () => {
+  rejectsSvg(`<svg ${NS}><feImage href="#a"/></svg>`, /outside the allowed set/);
+});
+
+test('a style attribute fails', () => {
+  rejectsSvg(`<svg ${NS}><rect style="fill:red"/></svg>`, /style attribute/);
+});
+
+test('a css escape fails', () => {
+  rejectsSvg(`<svg ${NS}><rect fill="u\\72l(https://example.com/a.svg#x)"/></svg>`, /backslash/);
+});
+
+test('an image-set function fails', () => {
+  rejectsSvg(`<svg ${NS}><rect mask="image-set('https://example.com/a.png' 1x)"/></svg>`, /image-set/);
+});
+
+test('an editor-style svg passes', () => {
+  passesSvg(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Generator: editor -->\n<svg ${NS} width="64" height="64">` +
+      '<title>Mark</title><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient>' +
+      '<path id="a" d="M0 0L8 8"/></defs><use href="#a" fill="url(#g)"/></svg>'
+  );
 });
