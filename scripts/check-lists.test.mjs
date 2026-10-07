@@ -98,9 +98,15 @@ test('a png over 256x256 fails', () => {
   rejects(result, /larger than 256x256/);
 });
 
+test('a png taller than 256 fails', () => {
+  const result = run({ tokens: [withLogo('png')], files: { [logoPath('png')]: png(64, 300) } });
+  rejects(result, /larger than 256x256/);
+});
+
 test('a png without the PNG signature fails', () => {
-  const result = run({ tokens: [withLogo('png')], files: { [logoPath('png')]: Buffer.alloc(33) } });
-  rejects(result, /is not a PNG/);
+  const bytes = png(64, 64);
+  bytes[0] ^= 0xff;
+  rejects(run({ tokens: [withLogo('png')], files: { [logoPath('png')]: bytes } }), /is not a PNG/);
 });
 
 test('a token on the wrong network fails', () => {
@@ -175,7 +181,7 @@ test('a file that is not an svg fails', () => {
 });
 
 test('a truncated png fails cleanly', () => {
-  const short = png(64, 64).subarray(0, 12);
+  const short = png(64, 64).subarray(0, 20);
   rejects(run({ tokens: [withLogo('png')], files: { [logoPath('png')]: short } }), /is not a PNG/);
 });
 
