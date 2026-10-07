@@ -90,7 +90,7 @@ test('an svg with an event handler fails', () => {
 });
 
 test('an svg linking outside itself fails', () => {
-  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><use href="https://example.com/a.svg#x"/></svg>'), /href that leaves/);
+  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><linearGradient id="g" href="https://example.com/a.svg#x"/></svg>'), /href that leaves/);
 });
 
 test('a png over 256x256 fails', () => {
@@ -161,11 +161,12 @@ test('a set element fails', () => {
 });
 
 test('an xlink:href to an outside url fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="https://example.com/a.svg#x"/></svg>`, /href that leaves/);
+  rejectsSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><linearGradient id="g" xlink:href="https://example.com/a.svg#x"/></svg>`, /href that leaves/);
 });
 
 test('an internal href passes', () => {
-  passesSvg(`<svg ${NS}><defs><path id="a" d="M0 0"/></defs><use href="#a"/></svg>`);
+  passesSvg(`<svg ${NS}><defs><linearGradient id="a"/><linearGradient id="b" href="#a"/></defs></svg>`);
+  passesSvg(`<svg ${NS}><defs><linearGradient id="a"/><linearGradient id="b" href= "#a"/></defs></svg>`);
 });
 
 test('an svg after an xml comment passes', () => {
@@ -241,9 +242,9 @@ test('an image-set function fails', () => {
 
 test('an editor-style svg passes', () => {
   passesSvg(
-    `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Generator: editor -->\n<svg ${NS} width="64" height="64">` +
+    `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Generator: editor -->\n<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64">` +
       '<title>Mark</title><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient>' +
-      '<path id="a" d="M0 0L8 8"/></defs><use href="#a" fill="url(#g)"/></svg>'
+      '<linearGradient id="h" xlink:href="#g"/></defs><path d="M0 0L8 8" fill="url(#h)"/></svg>'
   );
 });
 
@@ -273,4 +274,16 @@ test('a DOCTYPE with an empty subset fails', () => {
 
 test('a named entity reference fails', () => {
   rejectsSvg(`<svg ${NS}><title>&lt;</title></svg>`, /entity reference/);
+});
+
+test('an unquoted href fails', () => {
+  rejectsSvg(`<svg ${NS}><linearGradient id="g" href=https://example.com/a.svg#x></linearGradient></svg>`, /href that leaves/);
+});
+
+test('a use element fails', () => {
+  rejectsSvg(`<svg ${NS}><use href="#a"/></svg>`, /\(<use>\)/);
+});
+
+test('a symbol element fails', () => {
+  rejectsSvg(`<svg ${NS}><symbol id="a"/></svg>`, /\(<symbol>\)/);
 });
