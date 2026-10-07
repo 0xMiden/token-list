@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +30,11 @@ function run({ tokens, files = {} }) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), content);
   }
-  return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8' });
+  try {
+    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8' });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 const token = (extra = {}) => ({ network: 'testnet', faucetId: ID, symbol: 'MIDEN', name: 'Miden', decimals: 6, ...extra });
@@ -40,6 +44,7 @@ const svgCase = content => run({ tokens: [withLogo()], files: { [logoPath()]: co
 
 const rejects = (result, text) => {
   assert.equal(result.status, 1, result.stderr);
+  assert.doesNotMatch(result.stderr, /\n\s+at /, 'no stack trace');
   assert.match(result.stderr, text);
 };
 
@@ -104,4 +109,86 @@ test('a token on the wrong network fails', () => {
 
 test('a duplicate faucet id fails', () => {
   rejects(run({ tokens: [token(), token()] }), /is listed twice/);
+});
+
+const NS = 'xmlns="http://www.w3.org/2000/svg"';
+const rejectsSvg = (content, text) => rejects(svgCase(content), text);
+const passesSvg = content => {
+  const result = svgCase(content);
+  assert.equal(result.status, 0, result.stderr);
+};
+
+test('a prefixed script element fails', () => {
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>`, /script or foreign/);
+});
+
+test('a foreignObject fails', () => {
+  rejectsSvg(`<svg ${NS}><foreignObject><div/></foreignObject></svg>`, /script or foreign/);
+});
+
+test('a prefixed foreignObject fails', () => {
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:foreignObject/></svg>`, /script or foreign/);
+});
+
+test('a style element fails', () => {
+  rejectsSvg(`<svg ${NS}><style>@import url(https://example.com/a.css);</style></svg>`, /script or foreign/);
+});
+
+test('a css @import fails', () => {
+  rejectsSvg(`<svg ${NS} style="@import 'https://example.com/a.css'"></svg>`, /outside/);
+});
+
+test('a style attribute fetching a url fails', () => {
+  rejectsSvg(`<svg ${NS}><rect style="fill:url(https://example.com/a.svg#x)"/></svg>`, /outside/);
+});
+
+test('an internal url(#id) paint passes', () => {
+  passesSvg(`<svg ${NS}><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/></svg>`);
+});
+
+test('an animate element setting an href fails', () => {
+  rejectsSvg(`<svg ${NS}><a><animate attributeName="href" to="https://example.com"/></a></svg>`, /script or foreign/);
+});
+
+test('a set element fails', () => {
+  rejectsSvg(`<svg ${NS}><a><set attributeName="href" to="https://example.com"/></a></svg>`, /script or foreign/);
+});
+
+test('an xlink:href to an outside url fails', () => {
+  rejectsSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="https://example.com/a.svg#x"/></svg>`, /outside/);
+});
+
+test('an internal href passes', () => {
+  passesSvg(`<svg ${NS}><defs><path id="a" d="M0 0"/></defs><use href="#a"/></svg>`);
+});
+
+test('an svg after an xml comment passes', () => {
+  passesSvg(`<!-- exported -->\n<svg ${NS}></svg>`);
+});
+
+test('an svg after a doctype passes', () => {
+  passesSvg(`<?xml version="1.0"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<svg ${NS}></svg>`);
+});
+
+test('a file that is not an svg fails', () => {
+  rejectsSvg('<html><body>hello</body></html>', /is not an SVG/);
+});
+
+test('a truncated png fails cleanly', () => {
+  const short = png(64, 64).subarray(0, 12);
+  rejects(run({ tokens: [withLogo('png')], files: { [logoPath('png')]: short } }), /is not a PNG/);
+});
+
+test('a png without an IHDR chunk fails', () => {
+  const bytes = png(64, 64);
+  bytes.write('IDAT', 12);
+  rejects(run({ tokens: [withLogo('png')], files: { [logoPath('png')]: bytes } }), /is not a PNG/);
+});
+
+test('a null logoURI fails cleanly', () => {
+  rejects(run({ tokens: [token({ logoURI: null })] }), /logoURI is not a string/);
+});
+
+test('a numeric logoURI fails cleanly', () => {
+  rejects(run({ tokens: [token({ logoURI: 5 })] }), /logoURI is not a string/);
 });
