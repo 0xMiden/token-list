@@ -82,7 +82,7 @@ test('a logo over 32 KiB fails', () => {
 });
 
 test('an svg with a script fails', () => {
-  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), /script/);
+  rejects(svgCase('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), /\(<script>\)/);
 });
 
 test('an svg with an event handler fails', () => {
@@ -125,19 +125,19 @@ const passesSvg = content => {
 };
 
 test('a prefixed script element fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>`, /\(<script>\)/);
 });
 
 test('a foreignObject fails', () => {
-  rejectsSvg(`<svg ${NS}><foreignObject><div/></foreignObject></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><foreignObject/></svg>`, /\(<foreignObject>\)/);
 });
 
 test('a prefixed foreignObject fails', () => {
-  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:foreignObject/></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:foreignObject/></svg>`, /\(<foreignObject>\)/);
 });
 
 test('a style element fails', () => {
-  rejectsSvg(`<svg ${NS}><style>@import url(https://example.com/a.css);</style></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><style/></svg>`, /\(<style>\)/);
 });
 
 test('a css @import fails', () => {
@@ -153,11 +153,11 @@ test('an internal url(#id) paint passes', () => {
 });
 
 test('an animate element setting an href fails', () => {
-  rejectsSvg(`<svg ${NS}><a><animate attributeName="href" to="https://example.com"/></a></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><animate attributeName="x"/></svg>`, /\(<animate>\)/);
 });
 
 test('a set element fails', () => {
-  rejectsSvg(`<svg ${NS}><a><set attributeName="href" to="https://example.com"/></a></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><set attributeName="x"/></svg>`, /\(<set>\)/);
 });
 
 test('an xlink:href to an outside url fails', () => {
@@ -220,11 +220,11 @@ test('a processing instruction before the root fails', () => {
 });
 
 test('an image element fails', () => {
-  rejectsSvg(`<svg ${NS}><image href="#a"/></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><image href="#a"/></svg>`, /\(<image>\)/);
 });
 
 test('a feImage element fails', () => {
-  rejectsSvg(`<svg ${NS}><feImage href="#a"/></svg>`, /outside the allowed set/);
+  rejectsSvg(`<svg ${NS}><feImage href="#a"/></svg>`, /\(<feImage>\)/);
 });
 
 test('a style attribute fails', () => {
@@ -249,4 +249,28 @@ test('an editor-style svg passes', () => {
 
 test('many comments before a non-svg fail fast', () => {
   rejectsSvg('<!---->'.repeat(40) + 'x', /is not an SVG/);
+});
+
+test('a css src function fails', () => {
+  rejectsSvg(`<svg ${NS}><rect fill="src(#a)"/></svg>`, /image-set\(\) or src\(\)/);
+});
+
+test('a standalone ENTITY declaration fails', () => {
+  rejectsSvg(`<!DOCTYPE svg>\n<!ENTITY a "b">\n<svg ${NS}></svg>`, /DOCTYPE subset or declaration/);
+});
+
+test('a standalone ELEMENT declaration fails', () => {
+  rejectsSvg(`<!DOCTYPE svg>\n<!ELEMENT svg ANY>\n<svg ${NS}></svg>`, /DOCTYPE subset or declaration/);
+});
+
+test('a standalone ATTLIST declaration fails', () => {
+  rejectsSvg(`<!DOCTYPE svg>\n<!ATTLIST svg a CDATA "b">\n<svg ${NS}></svg>`, /DOCTYPE subset or declaration/);
+});
+
+test('a DOCTYPE with an empty subset fails', () => {
+  rejectsSvg(`<!DOCTYPE svg []>\n<svg ${NS}></svg>`, /DOCTYPE subset or declaration/);
+});
+
+test('a named entity reference fails', () => {
+  rejectsSvg(`<svg ${NS}><title>&lt;</title></svg>`, /entity reference/);
 });
