@@ -31,7 +31,7 @@ function run({ tokens, files = {} }) {
     writeFileSync(join(dir, path), content);
   }
   try {
-    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000, maxBuffer: 64 * 1024 * 1024 });
+    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000 });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -442,4 +442,24 @@ test('a run of 32,000 < fails fast', () => {
   const elapsed = performance.now() - started;
   rejects(result, /tag the check cannot read/);
   assert.ok(elapsed < 1000, `took ${Math.round(elapsed)} ms`);
+});
+
+const lines = (result, text) => result.stderr.split('\n').filter(line => text.test(line)).length;
+
+test('a mismatch cascade prints one line', () => {
+  const result = svgCase(`<svg ${NS}><g><g><g><rect></g></g></g></svg>`);
+  rejects(result, CLOSES);
+  assert.equal(lines(result, CLOSES), 1);
+});
+
+test('a 32 KB run of unknown elements prints one line', () => {
+  const result = svgCase(`<svg ${NS}>${'<x/>'.repeat(8000)}`);
+  rejects(result, /outside the allowed set/);
+  assert.equal(lines(result, /outside the allowed set/), 1);
+});
+
+test('a run of 32,000 < prints at most two unreadable-tag lines', () => {
+  const result = svgCase(`<svg ${NS}>${'<'.repeat(32000)}`);
+  rejects(result, /tag the check cannot read/);
+  assert.ok(lines(result, /tag the check cannot read/) <= 2);
 });

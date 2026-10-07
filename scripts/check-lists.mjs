@@ -48,27 +48,25 @@ function walkTags(svg, start, problem) {
     if (svg[i + 1] === '/') {
       endTag.lastIndex = i;
       const closed = endTag.exec(svg);
-      if (!closed) problem('has an end tag the check cannot read');
-      else if (closed[1] !== stack[stack.length - 1]) problem(`has an end tag that does not close its element (</${closed[1]}>)`);
-      else {
-        stack.pop();
-        end = endTag.lastIndex;
-        if (isClip(closed[1]) && !stack.some(isClip)) {
-          if (/href\s*=|url\(/i.test(svg.slice(clipFrom, end))) problem('has a reference inside a clipPath');
-          clipFrom = -1;
-        }
+      if (!closed) return problem('has an end tag the check cannot read');
+      if (closed[1] !== stack[stack.length - 1]) {
+        return problem(`has an end tag that does not close its element (</${closed[1]}>)`);
+      }
+      stack.pop();
+      end = endTag.lastIndex;
+      if (isClip(closed[1]) && !stack.some(isClip)) {
+        if (/href\s*=|url\(/i.test(svg.slice(clipFrom, end))) problem('has a reference inside a clipPath');
+        clipFrom = -1;
       }
     } else {
       startTag.lastIndex = i;
       const opened = startTag.exec(svg);
-      if (!opened) problem('has a tag the check cannot read');
-      else {
-        end = startTag.lastIndex;
-        if (isClip(opened[1]) && stack.some(isClip)) problem('has a clipPath inside a clipPath');
-        if (!opened[0].endsWith('/>')) {
-          if (isClip(opened[1]) && clipFrom === -1) clipFrom = i;
-          stack.push(opened[1]);
-        }
+      if (!opened) return problem('has a tag the check cannot read');
+      end = startTag.lastIndex;
+      if (isClip(opened[1]) && stack.some(isClip)) problem('has a clipPath inside a clipPath');
+      if (!opened[0].endsWith('/>')) {
+        if (isClip(opened[1]) && clipFrom === -1) clipFrom = i;
+        stack.push(opened[1]);
       }
     }
     if (stack.length === 0) {
@@ -101,7 +99,11 @@ function checkLogo(file, token) {
     return;
   }
   const svg = bytes.toString('utf8');
-  const problem = message => fail(`${file}: ${path} ${message}`);
+  const reported = new Set();
+  const problem = message => {
+    if (!reported.has(message)) fail(`${file}: ${path} ${message}`);
+    reported.add(message);
+  };
   const root = SVG_ROOT.exec(svg);
   if (!root) problem('is not an SVG');
   else if (/<[!?]/.test(svg.slice(root[0].length))) {
