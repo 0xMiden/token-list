@@ -2,8 +2,8 @@
 // no faucet id appears twice in one list, and a token's logo is its own file in this repository
 // (at most 32 KiB; a PNG at most 256x256). An SVG logo is a flat mark that instantiates nothing:
 // only allowlisted elements (no use or symbol, script, foreignObject, style, image, animation or
-// filter, prefixed or not), no event handler, style attribute, character or entity reference or
-// backslash, every href a quoted # fragment, no CSS url() leaving the file, no @import,
+// filter, prefixed or not; every tag an ASCII name the scan can read), ASCII text only, no event
+// handler, style attribute, character or entity reference or backslash, every href a quoted # fragment, no CSS url() leaving the file, no @import,
 // image-set() or src(), and before the root only an XML declaration, comments and a DOCTYPE
 // without an internal subset.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -51,8 +51,11 @@ function checkLogo(file, token) {
   if (!SVG_ROOT.test(svg)) problem('is not an SVG');
   if (/<!DOCTYPE[^>]*\[|<!(?:ENTITY|ATTLIST|ELEMENT)/i.test(svg)) problem('has a DOCTYPE subset or declaration');
   if (/<\?(?!xml\s)/i.test(svg)) problem('has a processing instruction');
-  for (const [, , name] of svg.matchAll(/<([A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)/g)) {
-    if (!ALLOWED_ELEMENTS.has(name)) problem(`has an element outside the allowed set (<${name}>)`);
+  if (/[^\x00-\x7F]/.test(svg)) problem('has a non-ASCII character');
+  for (const [, tag] of svg.matchAll(/<(?![!?/])([^\s/>]*)/g)) {
+    const named = /^(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)$/.exec(tag);
+    if (!named) problem('has a tag the check cannot read');
+    else if (!ALLOWED_ELEMENTS.has(named[1])) problem(`has an element outside the allowed set (<${named[1]}>)`);
   }
   if (/&#|&[\w.-]+;/.test(svg)) problem('has a character or entity reference');
   if (/\\/.test(svg)) problem('has a backslash');

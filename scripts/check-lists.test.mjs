@@ -287,3 +287,15 @@ test('a use element fails', () => {
 test('a symbol element fails', () => {
   rejectsSvg(`<svg ${NS}><symbol id="a"/></svg>`, /\(<symbol>\)/);
 });
+
+test('a non-ASCII namespace prefix fails', () => {
+  rejectsSvg(`<svg ${NS} xmlns:gé="http://www.w3.org/2000/svg"><gé:script>alert(1)</gé:script></svg>`, /non-ASCII/);
+});
+
+test('a non-ASCII prefixed foreignObject fails', () => {
+  rejectsSvg(`<svg ${NS} xmlns:é="http://www.w3.org/2000/svg"><é:foreignObject/></svg>`, /non-ASCII/);
+});
+
+test('a tag with an empty prefix name fails', () => {
+  rejectsSvg(`<svg ${NS}><:script/></svg>`, /tag the check cannot read/);
+});
