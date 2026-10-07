@@ -339,3 +339,41 @@ test('33 mixed internal references fail', () => {
   const refs = Array.from({ length: 33 }, (_, i) => forms[i % 3]).join('');
   rejectsSvg(`<svg ${NS}><defs><linearGradient id="a"/><linearGradient id="g"/></defs>${refs}</svg>`, /more than 32 internal references/);
 });
+
+const CLIP_REF = '<rect fill="url(#g)"/>';
+const clipSvg = inner => `<svg ${NS}>${inner}</svg>`;
+
+test('a comment inside a clipPath body fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c"><!-- </clipPath> -->${CLIP_REF}</clipPath>`), /comment, CDATA section or processing instruction after the root/);
+});
+
+test('a CDATA section inside a clipPath body fails', () => {
+  rejectsSvg(
+    clipSvg(`<clipPath id="c"><text><![CDATA[</clipPath>]]></text>${CLIP_REF}</clipPath>`),
+    /comment, CDATA section or processing instruction after the root/
+  );
+});
+
+test('a clipPath inside a clipPath fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c"><clipPath id="e"></clipPath>${CLIP_REF}</clipPath>`), /clipPath inside a clipPath/);
+});
+
+test('a > inside a start tag attribute value fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c" data-x="/>">${CLIP_REF}</clipPath>`), /< or > inside an attribute value/);
+});
+
+test('an end tag inside an attribute value fails', () => {
+  rejectsSvg(clipSvg('<clipPath id="c"><rect data-x="</clipPath>" fill="url(#g)"/></clipPath>'), /< or > inside an attribute value/);
+});
+
+test('an unquoted attribute value fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c" data-x=/>${CLIP_REF}</clipPath>`), /unquoted attribute value/);
+});
+
+test('a clipPath without an end tag fails', () => {
+  rejectsSvg(`<svg ${NS}><clipPath id="c">${CLIP_REF}</svg>`, /clipPath without an end tag/);
+});
+
+test('a clipPath closed in another case fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c">${CLIP_REF}</CLIPPATH>`), /clipPath without an end tag/);
+});

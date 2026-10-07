@@ -4,9 +4,12 @@
 // references: only allowlisted elements (no use, symbol or mask, script, foreignObject, style,
 // image, animation or filter, prefixed or not; every tag an ASCII name the scan can read), ASCII
 // text only, no event handler, style attribute, character or entity reference or backslash, every
-// href a quoted # fragment, no CSS url() leaving the file, no @import, image-set() or src(), no
-// reference inside a clipPath, at most 32 fragment references, and before the root only an XML
-// declaration, comments and a DOCTYPE without an internal subset.
+// href a quoted # fragment, no CSS url() leaving the file, no @import, image-set() or src(), at
+// most 32 fragment references, and before the root only an XML declaration, comments and a DOCTYPE
+// without an internal subset. So the clipPath body scan reads the real body: no comment, CDATA
+// section or processing instruction after the root starts, no < or > inside a quoted attribute
+// value, every attribute value quoted, no clipPath inside a clipPath, every non-empty clipPath
+// closed by its own end tag, and no reference inside a clipPath.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
@@ -50,7 +53,11 @@ function checkLogo(file, token) {
   }
   const svg = bytes.toString('utf8');
   const problem = message => fail(`${file}: ${path} ${message}`);
-  if (!SVG_ROOT.test(svg)) problem('is not an SVG');
+  const root = SVG_ROOT.exec(svg);
+  if (!root) problem('is not an SVG');
+  else if (/<[!?]/.test(svg.slice(root[0].length))) {
+    problem('has a comment, CDATA section or processing instruction after the root starts');
+  }
   if (/<!DOCTYPE[^>]*\[|<!(?:ENTITY|ATTLIST|ELEMENT)/i.test(svg)) problem('has a DOCTYPE subset or declaration');
   if (/<\?(?!xml\s)/i.test(svg)) problem('has a processing instruction');
   if (/[^\x00-\x7F]/.test(svg)) problem('has a non-ASCII character');
@@ -65,7 +72,17 @@ function checkLogo(file, token) {
   if (/[\s"'/]on[a-z]+\s*=/i.test(svg)) problem('has an event handler attribute');
   if (/href\s*=(?!\s*["']#)/i.test(svg)) problem('has an href that leaves the file');
   if (/url\(\s*(?!["']?\s*#)/i.test(svg)) problem('has a CSS url() that leaves the file');
-  for (const [body] of svg.matchAll(/<(?:[\w.-]+:)?clipPath\b[^>]*?(?<!\/)>[\s\S]*?<\/(?:[\w.-]+:)?clipPath\s*>/g)) {
+  if (/=\s*(?:"[^"]*|'[^']*)[<>]/.test(svg)) problem('has a < or > inside an attribute value');
+  for (const [tag] of svg.matchAll(/<(?![!?/])[^>]*>/g)) {
+    if (/=(?!\s*["'])/.test(tag.replace(/"[^"]*"|'[^']*'/g, '""'))) problem('has an unquoted attribute value');
+  }
+  // With the rules above, the first end tag after a non-empty clipPath start tag is its own.
+  const clipStart = /<(?:[\w.-]+:)?clipPath\b[^>]*?(?<!\/)>/g;
+  const clipBodies = [...svg.matchAll(new RegExp(`${clipStart.source}[\\s\\S]*?<\\/(?:[\\w.-]+:)?clipPath\\s*>`, 'g'))];
+  if (clipBodies.length !== (svg.match(clipStart) ?? []).length) problem('has a clipPath without an end tag');
+  for (const [body] of clipBodies) {
+    const inner = body.replace(new RegExp(`^${clipStart.source}`), '');
+    if (/<(?:[\w.-]+:)?clipPath\b/.test(inner)) problem('has a clipPath inside a clipPath');
     if (/href\s*=|url\(/i.test(body)) problem('has a reference inside a clipPath');
   }
   if ((svg.match(/href\s*=\s*["']#|url\(\s*["']?\s*#/gi) ?? []).length > MAX_REFERENCES) {
