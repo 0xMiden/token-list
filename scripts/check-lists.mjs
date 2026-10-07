@@ -6,10 +6,10 @@
 // text only, no event handler, style attribute, character or entity reference or backslash, every
 // href a quoted # fragment, no CSS url() leaving the file, no @import, image-set() or src(), at
 // most 32 fragment references, and before the root only an XML declaration, comments and a DOCTYPE
-// without an internal subset. So the clipPath body scan reads the real body: no comment, CDATA
-// section or processing instruction after the root starts, no < or > inside a quoted attribute
-// value, every attribute value quoted, no clipPath inside a clipPath, every non-empty clipPath
-// closed by its own end tag, and no reference inside a clipPath.
+// without an internal subset. Tags nest (every end tag closes its own element, every element is
+// closed, nothing follows the root), with no comment, CDATA section or processing instruction
+// after the root starts, no < or > inside a quoted attribute value and every attribute value
+// quoted, so no clipPath holds a clipPath or a reference.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
@@ -30,6 +30,55 @@ const fail = message => {
   console.error(message);
   failed = true;
 };
+
+// Tags must nest: every end tag closes its own element, every element is closed and nothing
+// follows the root. That is what lets the clipPath rules read a clipPath's real body.
+function walkTags(svg, start, problem) {
+  const startTag = /<([^\s/>]*)[^<>]*>/y;
+  const endTag = /<\/((?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*)\s*>/y;
+  const isClip = name => name.split(':').pop() === 'clipPath';
+  const stack = [];
+  let clipFrom = -1;
+  for (let i = svg.indexOf('<', start); i !== -1; i = svg.indexOf('<', i)) {
+    if (svg[i + 1] === '!' || svg[i + 1] === '?') {
+      i += 2;
+      continue;
+    }
+    let end = i + 1;
+    if (svg[i + 1] === '/') {
+      endTag.lastIndex = i;
+      const closed = endTag.exec(svg);
+      if (!closed) problem('has an end tag the check cannot read');
+      else if (closed[1] !== stack[stack.length - 1]) problem(`has an end tag that does not close its element (</${closed[1]}>)`);
+      else {
+        stack.pop();
+        end = endTag.lastIndex;
+        if (isClip(closed[1]) && !stack.some(isClip)) {
+          if (/href\s*=|url\(/i.test(svg.slice(clipFrom, end))) problem('has a reference inside a clipPath');
+          clipFrom = -1;
+        }
+      }
+    } else {
+      startTag.lastIndex = i;
+      const opened = startTag.exec(svg);
+      if (!opened) problem('has a tag the check cannot read');
+      else {
+        end = startTag.lastIndex;
+        if (isClip(opened[1]) && stack.some(isClip)) problem('has a clipPath inside a clipPath');
+        if (!opened[0].endsWith('/>')) {
+          if (isClip(opened[1]) && clipFrom === -1) clipFrom = i;
+          stack.push(opened[1]);
+        }
+      }
+    }
+    if (stack.length === 0) {
+      if (/\S/.test(svg.slice(end))) problem('has content after the root element');
+      return;
+    }
+    i = end;
+  }
+  for (const name of stack) problem(`has an element without an end tag (<${name}>)`);
+}
 
 function checkLogo(file, token) {
   const { logoURI, faucetId } = token;
@@ -76,15 +125,7 @@ function checkLogo(file, token) {
   for (const [tag] of svg.matchAll(/<(?![!?/])[^>]*>/g)) {
     if (/=(?!\s*["'])/.test(tag.replace(/"[^"]*"|'[^']*'/g, '""'))) problem('has an unquoted attribute value');
   }
-  // With the rules above, the first end tag after a non-empty clipPath start tag is its own.
-  const clipStart = /<(?:[\w.-]+:)?clipPath\b[^>]*?(?<!\/)>/g;
-  const clipBodies = [...svg.matchAll(new RegExp(`${clipStart.source}[\\s\\S]*?<\\/(?:[\\w.-]+:)?clipPath\\s*>`, 'g'))];
-  if (clipBodies.length !== (svg.match(clipStart) ?? []).length) problem('has a clipPath without an end tag');
-  for (const [body] of clipBodies) {
-    const inner = body.replace(new RegExp(`^${clipStart.source}`), '');
-    if (/<(?:[\w.-]+:)?clipPath\b/.test(inner)) problem('has a clipPath inside a clipPath');
-    if (/href\s*=|url\(/i.test(body)) problem('has a reference inside a clipPath');
-  }
+  if (root) walkTags(svg, root[0].length - '<svg '.length, problem);
   if ((svg.match(/href\s*=\s*["']#|url\(\s*["']?\s*#/gi) ?? []).length > MAX_REFERENCES) {
     problem(`has more than ${MAX_REFERENCES} internal references`);
   }

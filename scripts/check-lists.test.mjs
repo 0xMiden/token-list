@@ -371,9 +371,39 @@ test('an unquoted attribute value fails', () => {
 });
 
 test('a clipPath without an end tag fails', () => {
-  rejectsSvg(`<svg ${NS}><clipPath id="c">${CLIP_REF}</svg>`, /clipPath without an end tag/);
+  rejectsSvg(`<svg ${NS}><clipPath id="c">${CLIP_REF}</svg>`, /end tag that does not close its element/);
 });
 
 test('a clipPath closed in another case fails', () => {
-  rejectsSvg(clipSvg(`<clipPath id="c">${CLIP_REF}</CLIPPATH>`), /clipPath without an end tag/);
+  rejectsSvg(clipSvg(`<clipPath id="c">${CLIP_REF}</CLIPPATH>`), /end tag that does not close its element/);
+});
+
+const CLOSES = /end tag that does not close its element/;
+
+test('an end tag with another prefix fails', () => {
+  rejectsSvg(clipSvg('<clipPath id="c"><rect/></x:clipPath><rect clip-path="url(#c)"/>'), CLOSES);
+});
+
+test('an unreadable end tag fails', () => {
+  rejectsSvg(clipSvg(`<clipPath id="c"></1</clipPath>${CLIP_REF}</clipPath>`), /end tag the check cannot read/);
+});
+
+test('a stray end tag after a closed clipPath fails', () => {
+  rejectsSvg(clipSvg('<clipPath id="c"><rect/></clipPath></clipPath>'), CLOSES);
+});
+
+test('content after the root element fails', () => {
+  rejectsSvg(`<svg ${NS}></svg>${CLIP_REF}`, /content after the root element/);
+});
+
+test('an element without an end tag fails', () => {
+  rejectsSvg(`<svg ${NS}><g>`, /element without an end tag \(<g>\)/);
+});
+
+test('a start tag broken by a < fails', () => {
+  rejectsSvg(clipSvg('<g a="1" <rect/></g>'), /tag the check cannot read/);
+});
+
+test('a prefixed element closed by the same prefixed name passes', () => {
+  passesSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg"><s:g><s:rect/></s:g></svg>\n`);
 });
