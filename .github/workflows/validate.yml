@@ -11,6 +11,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,3 +25,5 @@ jobs:
           done
       - name: Network and duplicate checks
         run: node scripts/check-lists.mjs
+      - name: Check script tests
+        run: node --test scripts/*.test.mjs

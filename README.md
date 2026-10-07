@@ -15,11 +15,11 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 ```json
 {
   "name": "Miden Testnet Verified Tokens",
-  "timestamp": "2026-09-28T00:00:00.000Z",
-  "version": { "major": 1, "minor": 0, "patch": 0 },
+  "timestamp": "2026-10-07T00:00:00.000Z",
+  "version": { "major": 1, "minor": 0, "patch": 1 },
   "keywords": ["miden", "testnet"],
   "tokens": [
-    { "network": "testnet", "faucetId": "mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec", "symbol": "MIDEN", "name": "Miden", "decimals": 6 }
+    { "network": "testnet", "faucetId": "mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec", "symbol": "MIDEN", "name": "Miden", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec/logo.png" }
   ]
 }
 ```
@@ -28,9 +28,13 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 - `symbol` and `decimals` are the faucet's on-chain metadata.
 - Every token's `network` matches its file name, and a faucet ID appears once per list.
 
+## Logos
+
+A token may carry a `logoURI`, which must be `https://raw.githubusercontent.com/0xMiden/token-list/main/logos/<faucetId>/logo.png` for its own faucet ID, with the file in this repository. CI checks the path, that the file exists as a regular file (no symlink, in the file or any directory above it), that it is a PNG of at most 32 KiB, and that it is square and at most 256x256. A logo is a complete square mark with its own background, since wallets draw it as is inside a circle.
+
 ## Adding a token
 
-Open a pull request that adds the token to its network's file, bumps `version` (minor for an addition, major for a removal) and updates `timestamp`. CI validates the list against the schema and the rules above. A maintainer of the Miden team reviews every change.
+Open a pull request that adds the token to its network's file, bumps `version` (minor for an addition, major for a removal, patch for a change to a listed token, its logo included) and updates `timestamp`. CI validates the list against the schema and the rules above. A maintainer of the Miden team reviews every change.
 
 Bridged assets are listed once their Miden faucets exist on the network.
 

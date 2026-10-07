@@ -34,7 +34,11 @@
           "symbol": { "type": "string", "minLength": 1, "maxLength": 20 },
           "name": { "type": "string", "minLength": 1, "maxLength": 60 },
           "decimals": { "type": "integer", "minimum": 0, "maximum": 18 },
-          "logoURI": { "type": "string", "format": "uri" }
+          "logoURI": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://raw\\.githubusercontent\\.com/0xMiden/token-list/main/logos/m[a-z]{1,4}1[02-9ac-hj-np-z]+/logo\\.png$"
+          }
         }
       }
     }
