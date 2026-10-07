@@ -1,21 +1,23 @@
 // Checks the rules the JSON Schema cannot express: each token's network matches its file name,
 // no faucet id appears twice in one list, and a token's logo is its own file in this repository
-// (at most 32 KiB; a PNG at most 256x256). An SVG logo is a flat mark that instantiates nothing:
-// only allowlisted elements (no use or symbol, script, foreignObject, style, image, animation or
-// filter, prefixed or not; every tag an ASCII name the scan can read), ASCII text only, no event
-// handler, style attribute, character or entity reference or backslash, every href a quoted # fragment, no CSS url() leaving the file, no @import,
-// image-set() or src(), and before the root only an XML declaration, comments and a DOCTYPE
-// without an internal subset.
+// (at most 32 KiB; a PNG at most 256x256). An SVG logo is a flat mark with bounded internal
+// references: only allowlisted elements (no use, symbol or mask, script, foreignObject, style,
+// image, animation or filter, prefixed or not; every tag an ASCII name the scan can read), ASCII
+// text only, no event handler, style attribute, character or entity reference or backslash, every
+// href a quoted # fragment, no CSS url() leaving the file, no @import, image-set() or src(), no
+// reference inside a clipPath, at most 32 fragment references, and before the root only an XML
+// declaration, comments and a DOCTYPE without an internal subset.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 
 const LOGO_PREFIX = 'https://raw.githubusercontent.com/0xMiden/token-list/main/';
 const MAX_LOGO_BYTES = 32 * 1024;
 const MAX_PNG_SIDE = 256;
+const MAX_REFERENCES = 32;
 // The XML declaration, comments and a DOCTYPE with no internal subset may precede the root.
 const SVG_ROOT = /^\s*(?:<\?xml\s[^>]*\?>\s*|<!--(?:(?!-->)[\s\S])*-->\s*|<!DOCTYPE[^>[]*>\s*)*<svg[\s>]/i;
 const ALLOWED_ELEMENTS = new Set([
   'svg', 'g', 'defs', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
-  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'title', 'desc', 'text', 'tspan',
+  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'title', 'desc', 'text', 'tspan',
 ]);
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -63,6 +65,12 @@ function checkLogo(file, token) {
   if (/[\s"'/]on[a-z]+\s*=/i.test(svg)) problem('has an event handler attribute');
   if (/href\s*=(?!\s*["']#)/i.test(svg)) problem('has an href that leaves the file');
   if (/url\(\s*(?!["']?\s*#)/i.test(svg)) problem('has a CSS url() that leaves the file');
+  for (const [body] of svg.matchAll(/<(?:[\w.-]+:)?clipPath\b[^>]*?(?<!\/)>[\s\S]*?<\/(?:[\w.-]+:)?clipPath\s*>/g)) {
+    if (/href\s*=|url\(/i.test(body)) problem('has a reference inside a clipPath');
+  }
+  if ((svg.match(/href\s*=\s*["']#|url\(\s*["']?\s*#/gi) ?? []).length > MAX_REFERENCES) {
+    problem(`has more than ${MAX_REFERENCES} internal references`);
+  }
   if (/@import/i.test(svg)) problem('has a CSS @import');
   if (/image-set\(|(?<![\w-])src\(/i.test(svg)) problem('has a CSS image-set() or src() function');
 }

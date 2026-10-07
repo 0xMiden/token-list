@@ -299,3 +299,43 @@ test('a non-ASCII prefixed foreignObject fails', () => {
 test('a tag with an empty prefix name fails', () => {
   rejectsSvg(`<svg ${NS}><:script/></svg>`, /tag the check cannot read/);
 });
+
+test('a mask element fails', () => {
+  rejectsSvg(`<svg ${NS}><mask id="m"/></svg>`, /\(<mask>\)/);
+});
+
+test('a url reference inside a clipPath fails', () => {
+  rejectsSvg(`<svg ${NS}><defs><clipPath id="c"><rect clip-path="url(#d)"/></clipPath></defs></svg>`, /reference inside a clipPath/);
+});
+
+test('a paint reference inside a clipPath fails', () => {
+  rejectsSvg(`<svg ${NS}><clipPath><rect fill="url(#g)"/></clipPath></svg>`, /reference inside a clipPath/);
+});
+
+test('an href inside a clipPath fails', () => {
+  rejectsSvg(`<svg ${NS}><clipPath id="c"><rect href="#a"/></clipPath></svg>`, /reference inside a clipPath/);
+});
+
+test('a reference inside a prefixed clipPath fails', () => {
+  const body = '<s:clipPath id="c"><rect fill="url(#g)"/></s:clipPath>';
+  rejectsSvg(`<svg ${NS} xmlns:s="http://www.w3.org/2000/svg">${body}</svg>`, /reference inside a clipPath/);
+});
+
+test('a clipPath used from outside its body passes', () => {
+  passesSvg(
+    `<svg ${NS}><defs><clipPath id="c"><rect width="1" height="1"/></clipPath></defs>` +
+      '<g clip-path="url(#c)"><rect width="2" height="2"/></g></svg>'
+  );
+});
+
+test('33 internal references fail and 32 pass', () => {
+  const refs = n => Array.from({ length: n }, () => '<rect fill="url(#g)"/>').join('');
+  passesSvg(`<svg ${NS}><defs><linearGradient id="g"/></defs>${refs(32)}</svg>`);
+  rejectsSvg(`<svg ${NS}><defs><linearGradient id="g"/></defs>${refs(33)}</svg>`, /more than 32 internal references/);
+});
+
+test('33 mixed internal references fail', () => {
+  const forms = ['<linearGradient id="b" href= "#a"/>', '<rect fill="url( #g)"/>', '<rect fill="URL(#g)"/>'];
+  const refs = Array.from({ length: 33 }, (_, i) => forms[i % 3]).join('');
+  rejectsSvg(`<svg ${NS}><defs><linearGradient id="a"/><linearGradient id="g"/></defs>${refs}</svg>`, /more than 32 internal references/);
+});
