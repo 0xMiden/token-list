@@ -22,8 +22,14 @@ const png = (width, height) => {
   return bytes;
 };
 
+const timed = fn => {
+  const started = performance.now();
+  const value = fn();
+  return [value, performance.now() - started];
+};
+
 // Builds a temporary repo with a testnet.json and the given files, runs the checks in it.
-function run({ tokens, files = {} }) {
+function run({ tokens, files = {}, timeout = 10_000 }) {
   const dir = mkdtempSync(join(tmpdir(), 'check-lists-'));
   writeFileSync(join(dir, 'testnet.json'), JSON.stringify({ tokens }));
   for (const [path, content] of Object.entries(files)) {
@@ -31,7 +37,10 @@ function run({ tokens, files = {} }) {
     writeFileSync(join(dir, path), content);
   }
   try {
-    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000 });
+    const result = spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout });
+    if (result.error?.code === 'ETIMEDOUT') throw new Error('check timed out');
+    if (result.error) throw result.error;
+    return result;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -40,7 +49,7 @@ function run({ tokens, files = {} }) {
 const token = (extra = {}) => ({ network: 'testnet', faucetId: ID, symbol: 'MIDEN', name: 'Miden', decimals: 6, ...extra });
 const logoPath = (ext = 'svg', id = ID) => `logos/${id}/logo.${ext}`;
 const withLogo = (ext = 'svg', id = ID) => token({ logoURI: PREFIX + logoPath(ext, id) });
-const svgCase = content => run({ tokens: [withLogo()], files: { [logoPath()]: content } });
+const svgCase = (content, timeout) => run({ tokens: [withLogo()], files: { [logoPath()]: content }, timeout });
 
 const rejects = (result, text) => {
   assert.equal(result.status, 1, result.stderr);
@@ -119,8 +128,8 @@ test('a duplicate faucet id fails', () => {
 
 const NS = 'xmlns="http://www.w3.org/2000/svg"';
 const rejectsSvg = (content, text) => rejects(svgCase(content), text);
-const passesSvg = content => {
-  const result = svgCase(content);
+const passesSvg = (content, timeout) => {
+  const result = svgCase(content, timeout);
   assert.equal(result.status, 0, result.stderr);
 };
 
@@ -248,8 +257,17 @@ test('an editor-style svg passes', () => {
   );
 });
 
+// Times a hostile logo against a GOOD_SVG run in the same test, so machine load cannot fake a pass.
+const failsFast = (hostile, text) => {
+  const [baseline, base] = timed(() => svgCase(GOOD_SVG));
+  assert.equal(baseline.status, 0, baseline.stderr);
+  const [result, elapsed] = timed(() => svgCase(hostile));
+  rejects(result, text);
+  assert.ok(elapsed < base + 1000, `hostile ${Math.round(elapsed)} ms, baseline ${Math.round(base)} ms`);
+};
+
 test('many comments before a non-svg fail fast', () => {
-  rejectsSvg('<!---->'.repeat(40) + 'x', /is not an SVG/);
+  failsFast('<!---->'.repeat(40) + 'x', /is not an SVG/);
 });
 
 test('a css src function fails', () => {
@@ -436,12 +454,12 @@ test('a comment before the root with a bang-ended close fails', () => {
   rejectsSvg(`<!-- --!></div> --><svg ${NS}></svg>`, IN_COMMENT);
 });
 
-test('a run of 32,000 < fails fast', () => {
-  const started = performance.now();
-  const result = svgCase(`<svg ${NS}>${'<'.repeat(32000)}`);
-  const elapsed = performance.now() - started;
-  rejects(result, /tag the check cannot read/);
-  assert.ok(elapsed < 1000, `took ${Math.round(elapsed)} ms`);
+test('3,600 cut-off start tags fail fast', () => {
+  failsFast(`<svg ${NS}>${'<g a="1" '.repeat(3600)}`, /tag the check cannot read/);
+});
+
+test('a spawn timeout is reported as a timeout', () => {
+  assert.throws(() => passesSvg(GOOD_SVG, 1), /check timed out/);
 });
 
 const lines = (result, text) => result.stderr.split('\n').filter(line => text.test(line)).length;
