@@ -34,7 +34,7 @@ const fail = message => {
 // Tags must nest: every end tag closes its own element, every element is closed and nothing
 // follows the root. That is what lets the clipPath rules read a clipPath's real body.
 function walkTags(svg, start, problem) {
-  const startTag = /<([^\s/>]*)[^<>]*>/y;
+  const startTag = /<([^\s/<>]*)[^<>]*>/y;
   const endTag = /<\/((?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*)\s*>/y;
   const isClip = name => name.split(':').pop() === 'clipPath';
   const stack = [];
@@ -125,7 +125,7 @@ function checkLogo(file, token) {
   if (/href\s*=(?!\s*["']#)/i.test(svg)) problem('has an href that leaves the file');
   if (/url\(\s*(?!["']?\s*#)/i.test(svg)) problem('has a CSS url() that leaves the file');
   if (/=\s*(?:"[^"]*|'[^']*)[<>]/.test(svg)) problem('has a < or > inside an attribute value');
-  for (const [tag] of svg.matchAll(/<(?![!?/])[^>]*>/g)) {
+  for (const [tag] of svg.matchAll(/<(?![!?/])[^<>]*>/g)) {
     if (/=(?!\s*["'])/.test(tag.replace(/"[^"]*"|'[^']*'/g, '""'))) problem('has an unquoted attribute value');
   }
   if (root) walkTags(svg, root[0].length - '<svg '.length, problem);

@@ -31,7 +31,7 @@ function run({ tokens, files = {} }) {
     writeFileSync(join(dir, path), content);
   }
   try {
-    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000 });
+    return spawnSync('node', [SCRIPT], { cwd: dir, encoding: 'utf8', timeout: 10_000, maxBuffer: 64 * 1024 * 1024 });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -434,4 +434,12 @@ test('a comment before the root hiding a tag fails', () => {
 
 test('a comment before the root with a bang-ended close fails', () => {
   rejectsSvg(`<!-- --!></div> --><svg ${NS}></svg>`, IN_COMMENT);
+});
+
+test('a run of 32,000 < fails fast', () => {
+  const started = performance.now();
+  const result = svgCase(`<svg ${NS}>${'<'.repeat(32000)}`);
+  const elapsed = performance.now() - started;
+  rejects(result, /tag the check cannot read/);
+  assert.ok(elapsed < 1000, `took ${Math.round(elapsed)} ms`);
 });
