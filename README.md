@@ -4,9 +4,10 @@ The verified tokens for Miden wallets, one list per network. A wallet marks a to
 
 | Network | File |
 |---|---|
+| Mainnet | [`mainnet.json`](mainnet.json) |
 | Testnet | [`testnet.json`](testnet.json) |
 
-Devnet and mainnet lists are added when there are tokens to list.
+The devnet list is added when there are tokens to list.
 
 ## Format
 
@@ -26,6 +27,7 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 
 - `faucetId` is the faucet account's bech32 ID, without a routing suffix (no `_...` part).
 - `symbol` and `decimals` are the faucet's on-chain metadata.
+- `binanceAsset` is optional: the exchange asset whose USD market prices the token when it is not the symbol (`WBNB` is priced as `BNB`). Without it a wallet prices the token under its symbol.
 - Every token's `network` matches its file name, and a faucet ID appears once per list.
 
 ## Logos
