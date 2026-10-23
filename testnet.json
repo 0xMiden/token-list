@@ -1,10 +1,10 @@
 {
   "name": "Miden Testnet Verified Tokens",
-  "timestamp": "2026-10-22T16:37:59.042Z",
+  "timestamp": "2026-10-23T01:50:38.890Z",
   "version": { "major": 1, "minor": 1, "patch": 0 },
   "keywords": ["miden", "testnet"],
   "tokens": [
-    { "network": "testnet", "faucetId": "mtst1azteyju6wlk4fytl7mtrvjhxvy08nme2", "symbol": "GC", "name": "Game Coin", "decimals": 6 },
+    { "network": "testnet", "faucetId": "mtst1arsl93ydt0ag65tnml8aezkfwu5ge0mg", "symbol": "GC", "name": "Gamecoin", "decimals": 6 },
     { "network": "testnet", "faucetId": "mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec", "symbol": "MIDEN", "name": "Miden", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1aqvpq8a9ytqhfvt9al20wzsrs56g83ec/logo.png" },
     { "network": "testnet", "faucetId": "mtst1arqxg9er3xclayt95nud82jnpggl9azj", "symbol": "IMIDEN", "name": "IMIDEN", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1arqxg9er3xclayt95nud82jnpggl9azj/logo.png" },
     { "network": "testnet", "faucetId": "mtst1arcf9xpxfrc7wygpv744ytgr6cw2df6h", "symbol": "IETH", "name": "IETH", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mtst1arcf9xpxfrc7wygpv744ytgr6cw2df6h/logo.png" },
