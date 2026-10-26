@@ -1,7 +1,7 @@
 {
   "name": "Miden Mainnet Verified Tokens",
-  "timestamp": "2026-10-26T04:47:26.000Z",
-  "version": { "major": 1, "minor": 1, "patch": 0 },
+  "timestamp": "2026-10-26T09:30:00.000Z",
+  "version": { "major": 1, "minor": 2, "patch": 0 },
   "keywords": ["miden", "mainnet"],
   "tokens": [
     {"network": "mainnet", "faucetId": "mm1aq62x5gzzdfn75fwcj47x6a0ssyu9cxz", "symbol": "GC", "name": "Gamecoin", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1aq62x5gzzdfn75fwcj47x6a0ssyu9cxz/logo.png"},
@@ -12,6 +12,8 @@
     {"network": "mainnet", "faucetId": "mm1apwt08ff2p7n45tmkmwxqfu73y70hydp", "symbol": "USDT", "name": "Tether USD", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1apwt08ff2p7n45tmkmwxqfu73y70hydp/logo.png"},
     {"network": "mainnet", "faucetId": "mm1apu7sttfmxwe7yt0g094cp3uqsea655m", "symbol": "WBNB", "name": "Wrapped BNB", "decimals": 8, "binanceAsset": "BNB", "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1apu7sttfmxwe7yt0g094cp3uqsea655m/logo.png"},
     {"network": "mainnet", "faucetId": "mm1ar45yekfgjfmpyfcpvjnf87a6vnu3arq", "symbol": "PYUSD", "name": "PayPal USD", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1ar45yekfgjfmpyfcpvjnf87a6vnu3arq/logo.png"},
-    {"network": "mainnet", "faucetId": "mm1apqelr6tlaeftyfj4f7w59dycysmtawe", "symbol": "ETH", "name": "Ether", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1apqelr6tlaeftyfj4f7w59dycysmtawe/logo.png"}
+    {"network": "mainnet", "faucetId": "mm1apqelr6tlaeftyfj4f7w59dycysmtawe", "symbol": "ETH", "name": "Ether", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1apqelr6tlaeftyfj4f7w59dycysmtawe/logo.png"},
+    {"network": "mainnet", "faucetId": "mm1ar7rgznnerajt52p9ul6rltd8g039qsa", "symbol": "USDG", "name": "Global Dollar", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1ar7rgznnerajt52p9ul6rltd8g039qsa/logo.png"},
+    {"network": "mainnet", "faucetId": "mm1azjm2663ak76y52vwyfcthr0xyuy7ll6", "symbol": "POL", "name": "Polygon Ecosystem Token", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1azjm2663ak76y52vwyfcthr0xyuy7ll6/logo.png"}
   ]
 }
