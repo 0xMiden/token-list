@@ -1,7 +1,7 @@
 {
   "name": "Miden Mainnet Verified Tokens",
-  "timestamp": "2026-10-26T12:08:51.000Z",
-  "version": { "major": 1, "minor": 3, "patch": 0 },
+  "timestamp": "2026-10-27T03:07:59.244Z",
+  "version": { "major": 1, "minor": 3, "patch": 1 },
   "keywords": ["miden", "mainnet"],
   "tokens": [
     {"network": "mainnet", "faucetId": "mm1arnfum9xuwwlrvgvrefejwvlavn3vk24", "symbol": "USDCX", "name": "USDCx", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1arnfum9xuwwlrvgvrefejwvlavn3vk24/logo.png"},
