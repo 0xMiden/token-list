@@ -193,3 +193,23 @@ test('a logo directory that links to itself reports a read error and later token
   rejects(result, /cannot be read \(ELOOP\)/);
   assert.match(result.stderr, /larger than 256x256/);
 });
+
+const THIRD = 'mtst1apqelr6tlaeftyfj4f7w59dycysmtawe';
+const coin = id => token({ faucetId: id, symbol: 'COIN' });
+const basket = constituents => token({ basket: { constituents } });
+
+test('a basket of listed tokens passes, whatever their order in the list', () => {
+  assert.equal(run({ tokens: [basket([OTHER, THIRD]), coin(OTHER), coin(THIRD)] }).status, 0);
+});
+
+for (const [label, tokens, text] of [
+  ['a basket with no constituents', [basket([])], /has no constituents/],
+  ['a basket that lists a constituent twice', [basket([OTHER, OTHER]), coin(OTHER)], /lists a constituent twice/],
+  ['a basket that lists itself', [basket([ID])], /lists itself/],
+  ['a basket of an unlisted token', [basket([OTHER])], /is not in this list/],
+  ['a basket of a basket', [basket([OTHER]), token({ faucetId: OTHER, symbol: 'B2', basket: { constituents: [THIRD] } }), coin(THIRD)], /is a basket/]
+]) {
+  test(`${label} fails`, () => {
+    rejects(run({ tokens }), text);
+  });
+}
