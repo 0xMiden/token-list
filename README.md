@@ -28,6 +28,7 @@ The [tokenlists.org](https://tokenlists.org) shape, adapted to Miden: `chainId` 
 - `faucetId` is the faucet account's bech32 ID, without a routing suffix (no `_...` part).
 - `symbol` and `decimals` are the faucet's on-chain metadata.
 - `binanceAsset` is optional: the exchange asset whose USD market prices the token when it is not the symbol (`WBNB` is priced as `BNB`). Without it a wallet prices the token under its symbol.
+- `basket` is optional: for a token whose faucet account is also the public vault that backs it. `constituents` lists the faucet IDs of the tokens that make up its value (1 to 12, each listed in the same file, none of them a basket, not the token itself). A wallet prices one unit from chain state alone: it reads the faucet account's vault balance of each constituent and the faucet's total supply, prices each constituent as it prices that token, and divides the vault's value by the supply. Any other asset in the vault (a fee float, a donation) is not counted. Each constituent's share of that value is the basket's composition. Example: `"basket": { "constituents": ["mm1...", "mm1..."] }`.
 - Every token's `network` matches its file name, and a faucet ID appears once per list.
 
 ## Logos
