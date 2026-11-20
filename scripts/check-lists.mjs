@@ -1,7 +1,7 @@
 // Checks the rules the JSON Schema cannot express: each token's network matches its file name,
-// no faucet id appears twice in one list, and a token's logo is its own PNG in this repository
+// no faucet id appears twice in one list, a token's logo is its own PNG in this repository
 // (a regular file, reached through no link, holding a square PNG of at most 32 KiB and
-// 256x256).
+// 256x256), and a basket's constituents are other tokens of the same list that are not baskets.
 import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -51,6 +51,23 @@ function checkLogo(file, token) {
   if (width === 0 || width !== height) fail(`${file}: ${path} is not a square image`);
 }
 
+function checkBasket(file, token, listed) {
+  const { basket, faucetId } = token;
+  if (basket === undefined) return;
+  const constituents = basket?.constituents;
+  if (!Array.isArray(constituents) || constituents.length === 0) {
+    return fail(`${file}: ${faucetId} basket has no constituents`);
+  }
+  if (new Set(constituents).size !== constituents.length) {
+    fail(`${file}: ${faucetId} basket lists a constituent twice`);
+  }
+  for (const id of constituents) {
+    if (id === faucetId) fail(`${file}: ${faucetId} basket lists itself`);
+    else if (!listed.has(id)) fail(`${file}: ${faucetId} basket constituent ${id} is not in this list`);
+    else if (listed.get(id).basket !== undefined) fail(`${file}: ${faucetId} basket constituent ${id} is a basket`);
+  }
+}
+
 for (const file of readdirSync('.').filter(name => NETWORKS.has(name.replace(/\.json$/, '')))) {
   const network = file.replace(/\.json$/, '');
   const { tokens } = JSON.parse(readFileSync(file, 'utf8'));
@@ -61,6 +78,9 @@ for (const file of readdirSync('.').filter(name => NETWORKS.has(name.replace(/\.
     seen.add(token.faucetId);
     checkLogo(file, token);
   }
+  // Constituents may be listed after the basket, so they are checked once the whole list is read.
+  const listed = new Map(tokens.map(token => [token.faucetId, token]));
+  for (const token of tokens) checkBasket(file, token, listed);
 }
 
 process.exit(failed ? 1 : 0);

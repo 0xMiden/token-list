@@ -1,7 +1,7 @@
 {
   "name": "Miden Mainnet Verified Tokens",
-  "timestamp": "2026-11-07T00:02:45.000Z",
-  "version": { "major": 1, "minor": 4, "patch": 0 },
+  "timestamp": "2026-11-10T14:36:24.000Z",
+  "version": { "major": 1, "minor": 4, "patch": 1 },
   "keywords": ["miden", "mainnet"],
   "tokens": [
     {"network": "mainnet", "faucetId": "mm1arnfum9xuwwlrvgvrefejwvlavn3vk24", "symbol": "USDCX", "name": "USDCx", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1arnfum9xuwwlrvgvrefejwvlavn3vk24/logo.png"},
@@ -16,6 +16,6 @@
     {"network": "mainnet", "faucetId": "mm1apqelr6tlaeftyfj4f7w59dycysmtawe", "symbol": "ETH", "name": "Ether", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1apqelr6tlaeftyfj4f7w59dycysmtawe/logo.png"},
     {"network": "mainnet", "faucetId": "mm1ar7rgznnerajt52p9ul6rltd8g039qsa", "symbol": "USDG", "name": "Global Dollar", "decimals": 6, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1ar7rgznnerajt52p9ul6rltd8g039qsa/logo.png"},
     {"network": "mainnet", "faucetId": "mm1azjm2663ak76y52vwyfcthr0xyuy7ll6", "symbol": "POL", "name": "Polygon Ecosystem Token", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1azjm2663ak76y52vwyfcthr0xyuy7ll6/logo.png"},
-    {"network": "mainnet", "faucetId": "mm1art7wz4563p0u5fkjwx053tztqz3w23c", "symbol": "BLUEDW", "name": "Darwin Blue Chip", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1art7wz4563p0u5fkjwx053tztqz3w23c/logo.png"}
+    {"network": "mainnet", "faucetId": "mm1art7wz4563p0u5fkjwx053tztqz3w23c", "symbol": "BLUEDW", "name": "Darwin Blue Chip", "decimals": 8, "logoURI": "https://raw.githubusercontent.com/0xMiden/token-list/main/logos/mm1art7wz4563p0u5fkjwx053tztqz3w23c/logo.png", "basket": {"constituents": ["mm1aqcgf57r38kwe52lm2thp5vv3g4af6h4", "mm1apqelr6tlaeftyfj4f7w59dycysmtawe", "mm1ar608hfk0zvhsy2jy9jryzlyhcdy7fv7"]}}
   ]
 }
